@@ -1,20 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>JS + CSS Clock</title>
   <link rel="icon" href="https://fav.farm/🔥" />
 </head>
+
 <body>
 
 
-    <div class="clock">
-      <div class="clock-face">
-        <div class="hand hour-hand"></div>
-        <div class="hand min-hand"></div>
-        <div class="hand second-hand"></div>
-      </div>
+  <div class="clock">
+    <div class="clock-face">
+      <div class="hand hour-hand"></div>
+      <div class="hand min-hand"></div>
+      <div class="hand second-hand"></div>
     </div>
+  </div>
 
 
   <style>
@@ -44,32 +46,123 @@
       position: relative;
       padding: 2rem;
       box-shadow:
-        0 0 0 4px rgba(0,0,0,0.1),
+        0 0 0 4px rgba(0, 0, 0, 0.1),
         inset 0 0 0 3px #EFEFEF,
         inset 0 0 10px black,
-        0 0 10px rgba(0,0,0,0.2);
+        0 0 10px rgba(0, 0, 0, 0.2);
     }
 
     .clock-face {
       position: relative;
       width: 100%;
       height: 100%;
-      transform: translateY(-3px); /* account for the height of the clock hands */
+      transform: translateY(-3px);
+      /* account for the height of the clock hands */
     }
 
     .hand {
+      position: absolute;
+      left: 50%;
+      /* center horizontally */
+      top: 50%;
+      /* center vertically (we'll offset with translateY) */
       width: 50%;
       height: 6px;
       background: black;
-      position: absolute;
-      top: 50%;
+      transform-origin: 0% 50%;
+      /* pivot at clock center */
     }
 
+
+    .hand.hour-hand {
+      width: 30%;
+      height: 8px;
+      background: #000000;
+
+    }
+
+    .hand.min-hand {
+      width: 40%;
+      height: 6px;
+      background: #FFA500;
+
+    }
+
+    .hand.second-hand {
+      width: 45%;
+      height: 2px;
+      background: #FF0000;
+
+    }
   </style>
 
   <script>
 
+    const hourHand = document.querySelector('.hand.hour-hand');
+    const minsHand = document.querySelector('.hand.min-hand');
+    const secondHand = document.querySelector('.hand.second-hand');
+
+    // A circle has 360 degrees.
+    const DEGREES_PER_CIRCLE = 360;
+
+    // The dial has 60 ticks for seconds and minutes.
+    // So each second or minute "step" is 360/60 = 6 degrees.
+    const TICKS_PER_MINUTE = 60; // also seconds per minute
+    const DEGREES_PER_MINUTE_OR_SECOND = DEGREES_PER_CIRCLE / TICKS_PER_MINUTE; // -> 6
+
+    // The dial has 12 hour numbers.
+    // So each hour "step" is 360/12 = 30 degrees.
+    const HOURS_ON_DIAL = 12;
+    const DEGREES_PER_HOUR = DEGREES_PER_CIRCLE / HOURS_ON_DIAL; // -> 30
+
+    // CSS rotate(0deg) points RIGHT (3 o'clock). We want "0" to be UP (12 o'clock),
+    // which is 90 degrees counter-clockwise from right. So we subtract 90°.
+    const CSS_ZERO_IS_RIGHT_OFFSET = 90;
+
+    function render() {
+      const { hourDeg, minuteDeg, secondDeg } = getAnglesFromDate();
+
+      // translateY(-50%) recenters the hand vertically because top:50% aligns its top edge on the center line
+      hourHand.style.transform = `translateY(-50%) rotate(${hourDeg - CSS_ZERO_IS_RIGHT_OFFSET}deg)`;
+      minsHand.style.transform = `translateY(-50%) rotate(${minuteDeg - CSS_ZERO_IS_RIGHT_OFFSET}deg)`;
+      secondHand.style.transform = `translateY(-50%) rotate(${secondDeg - CSS_ZERO_IS_RIGHT_OFFSET}deg)`;
+    }
+
+    function getAnglesFromDate(date = new Date()) {
+      
+      // 24h time from JS Date
+      const h24 = date.getHours();       
+      const m = date.getMinutes();      
+      const s = date.getSeconds();      
+      const ms = date.getMilliseconds(); 
+
+      // Make smooth (fractional) values:
+      // seconds = s + (ms/1000)
+      const secondsFraction = s + ms / 1000;
+
+      // minutes = m + (seconds/60)
+      const minutesFraction = m + secondsFraction / TICKS_PER_MINUTE;
+
+      // hours (12-hour dial) = (h24 % 12) + (minutes/60)
+      const hoursFraction = (h24 % HOURS_ON_DIAL) + minutesFraction / TICKS_PER_MINUTE;
+
+      // Convert to degrees using the per-unit constants we derived above:
+      // second hand: 6° per second
+      const secondDeg = secondsFraction * DEGREES_PER_MINUTE_OR_SECOND;
+
+      // minute hand: 6° per minute (and it includes the fraction from seconds)
+      const minuteDeg = minutesFraction * DEGREES_PER_MINUTE_OR_SECOND;
+
+      // hour hand: 30° per hour (and it includes the fraction from minutes)
+      const hourDeg = hoursFraction * DEGREES_PER_HOUR;
+
+      return { hourDeg, minuteDeg, secondDeg };
+    }
+
+    render()
+    setInterval(render, 1000)
 
   </script>
 </body>
+
 </html>
